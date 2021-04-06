@@ -1,15 +1,84 @@
 from lyricFinder import LyricFinder
+import random
 import nltk
 
 class LyricGenerator:
     def __init__(self, artist_name:str):
         self.artist_name = artist_name
+        self.cmu_dict = nltk.corpus.cmudict.dict()
     
     def train(self, lyrics:dict):
-        pass
+        lyrics = '\n'.join(x['lyrics'] for x in lyrics)
+        self.get_rhymes(lyrics)
 
     def generate(self, num_lines:int)->str:
-        return "TODO"
+        rhymes = random.choices(list(self.rhymes),k=round(num_lines/2))
+        lines = []
+        for rhyme in rhymes:
+            lines.append(self.get_rhyme_line(rhyme))
+            lines.append(self.get_rhyme_line(rhyme))
+        #random.shuffle(lines)
+        result = '\n'.join(lines)
+        return result
+        
+    def get_rhymes(self, raw_text:str):
+        text = nltk.word_tokenize(raw_text)
+        vocab = set(text)
+        bgrams = list(nltk.bigrams(text))
+        invertedBigrams = [([pair[1], pair[0]]) for pair in bgrams]
+        self.invertedCfd = nltk.ConditionalFreqDist(invertedBigrams)
+        inter = vocab.intersection(self.cmu_dict.keys())
+        
+        forwardDict = dict()
+        reverseDict = dict()
+        for each in inter :
+            pron = self.cmu_dict[each]
+            #rhyming part
+            temp = ''.join(pron[0][1:])
+            forwardDict[each] = temp
+            if temp in reverseDict :
+                reverseDict[temp].append(each)
+            else :
+                reverseDict[temp] = [each]
+        
+        # Remove all rhyming sets with 3 or fewer words.
+        for each in reverseDict.values() :
+            if len(each) < 4:
+                for every in each :
+                    inter.remove(every)
+        self.rhymes = inter
+        self.word_rhymes = forwardDict
+        self.word_rhymes_reverse = reverseDict
+
+    def get_rhyme_line(self, rhyme, min_words=10):
+        result = 0
+        while result < min_words :
+            listRhyming = self.word_rhymes_reverse[self.word_rhymes[rhyme]]
+            if len(listRhyming) == 0 :
+                return 0
+            rhymeWord = random.choice(listRhyming)
+            newLine = self.generate_model(self.invertedCfd, rhymeWord, min_words)
+            newLine.reverse()
+            result = len(newLine)
+        return ' '.join(newLine)
+                
+    def generate_model(self, cfdist, word, num) :
+        result = []
+        for i in range(num) :
+            # Make sure it's not <most> punctuation
+            if word[0] < 'A' or word[0] > 'z' :
+                i = i - 1
+            else :
+                result.append(word)
+            possible = cfdist[word].keys()
+            possible = list( possible )
+            if len(possible) == 0 :
+                return result
+            # Find a random word from the most probable words
+            topOfRange = int(len(possible)*.2)
+            word = possible[random.randint(0,topOfRange)]
+                
+        return result
 
 
 def main():

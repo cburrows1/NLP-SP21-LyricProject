@@ -42,7 +42,7 @@ class LyricFinder:
 
     def get_artists_lyrics(self, artist_names:str, songs_each)->dict:
         return {artist:self.get_artist_lyrics(artist, songs_each, overwrite=False) for artist in artist_names}
-                
+            
 
 def main():
 
