@@ -82,11 +82,20 @@ class LyricGenerator:
 
 
 def main():
+    #TODO-
+    #   make rhymes more accurate - make it actually recognize rhyming lines - good
+    #   pos tagging for sentence structure - remove
+    #   line/song length - good
+    #   sentiment analysis - remove
+    #   find syllables of every lines - add
+    #   improve accuracy numbers - GLEU https://www.linkedin.com/pulse/quality-machine-translation-alternatives-bleu-score-ilya-butenko/   
+
+
     genius_token = 'Pi4k_2PC5BmgU-WQorbpVE-3AWtCNGiD0szQMkfBb8pqEAEPRiR6-_lWmahaxxIn'
     lf = LyricFinder(genius_token, 'lyrics')
 
     artist = 'The Beatles'
-    data = lf.get_artist_lyrics(artist, num_songs=100)
+    data = lf.get_artist_lyrics(artist, num_songs=7)
 
     gen = LyricGenerator(artist)
     gen.train(data)
