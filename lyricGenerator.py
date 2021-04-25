@@ -1,4 +1,7 @@
 from lyricFinder import LyricFinder
+from nltk.tokenize import RegexpTokenizer
+import nltk.translate.gleu_score as gleu
+import numpy as np
 import random
 import nltk
 
@@ -6,23 +9,37 @@ class LyricGenerator:
     def __init__(self, artist_name:str):
         self.artist_name = artist_name
         self.cmu_dict = nltk.corpus.cmudict.dict()
+        self.tokenizer = RegexpTokenizer(r"[\w'-]+|\$[\d\.]+|,")
     
     def train(self, lyrics:dict):
-        lyrics = '\n'.join(x['lyrics'] for x in lyrics)
-        self.get_rhymes(lyrics)
+        lyrics_str = '\n'.join(x['lyrics'] for x in lyrics).lower()
+        stanza_line_counts = [x.count("\n") + 1 for x in lyrics_str.split("\n\n")]
+        
+        a = np.array(stanza_line_counts)
+        self.avg_stanza_len = [round(np.percentile(a,40)), round(np.percentile(a,60))]
+        self.avg_stanza_count = round( len(stanza_line_counts) / len(lyrics) )
 
-    def generate(self, num_lines:int)->str:
-        rhymes = random.choices(list(self.rhymes),k=round(num_lines/2))
+        lyric_tokens = self.tokenizer.tokenize(lyrics_str)
+        self.get_rhymes(lyric_tokens)
+
+    def generate(self)->str:
         lines = []
-        for rhyme in rhymes:
-            lines.append(self.get_rhyme_line(rhyme))
-            lines.append(self.get_rhyme_line(rhyme))
-        #random.shuffle(lines)
+        for _ in range(self.avg_stanza_count):
+            stanza = []
+            temp_rhymes = list(self.rhymes)
+            stanza_len = random.randint(self.avg_stanza_len[0],self.avg_stanza_len[1])
+            for _ in range(stanza_len // 2):
+                rhyme = random.choice(temp_rhymes)
+                temp_rhymes.remove(rhyme)
+                stanza.append(self.get_rhyme_line(rhyme))
+                stanza.append(self.get_rhyme_line(rhyme))
+            random.shuffle(stanza)
+            lines += stanza
+            lines.append("")
         result = '\n'.join(lines)
         return result
         
-    def get_rhymes(self, raw_text:str):
-        text = nltk.word_tokenize(raw_text)
+    def get_rhymes(self, text:list):
         vocab = set(text)
         bgrams = list(nltk.bigrams(text))
         invertedBigrams = [([pair[1], pair[0]]) for pair in bgrams]
@@ -64,12 +81,12 @@ class LyricGenerator:
                 
     def generate_model(self, cfdist, word, num) :
         result = []
+        tempWord = ""
         for i in range(num) :
-            # Make sure it's not <most> punctuation
-            if word[0] < 'A' or word[0] > 'z' :
-                i = i - 1
-            else :
-                result.append(word)
+            if word[0] in [',',"'"]:
+                tempWord = word
+            else:
+                result.append(word + tempWord)
             possible = cfdist[word].keys()
             possible = list( possible )
             if len(possible) == 0 :
@@ -77,31 +94,27 @@ class LyricGenerator:
             # Find a random word from the most probable words
             topOfRange = int(len(possible)*.2)
             word = possible[random.randint(0,topOfRange)]
-                
+        result[-1] = result[-1] + tempWord
+        return result
+    def analyze_lyrics(self, ref_lyric_data, hyp_lyrics):
+        ref_list = [self.tokenizer.tokenize(x['lyrics']) for x in ref_lyric_data]
+        hyp = self.tokenizer.tokenize(hyp_lyrics)
+        result = gleu.sentence_gleu(ref_list,hyp)
         return result
 
-
 def main():
-    #TODO-
-    #   make rhymes more accurate - make it actually recognize rhyming lines - good
-    #   pos tagging for sentence structure - remove
-    #   line/song length - good
-    #   sentiment analysis - remove
-    #   find syllables of every lines - add
-    #   improve accuracy numbers - GLEU https://www.linkedin.com/pulse/quality-machine-translation-alternatives-bleu-score-ilya-butenko/   
-
-
     genius_token = 'Pi4k_2PC5BmgU-WQorbpVE-3AWtCNGiD0szQMkfBb8pqEAEPRiR6-_lWmahaxxIn'
     lf = LyricFinder(genius_token, 'lyrics')
 
     artist = 'The Beatles'
-    data = lf.get_artist_lyrics(artist, num_songs=7)
+    data = lf.get_artist_lyrics(artist, num_songs=100)
 
     gen = LyricGenerator(artist)
     gen.train(data)
-    lyrics = gen.generate(10)
-
+    lyrics = gen.generate()
+    
     print(lyrics)
+    print(gen.analyze_lyrics(data,lyrics))
 
 if __name__ == "__main__":
     main()
