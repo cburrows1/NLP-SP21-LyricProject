@@ -6,6 +6,7 @@ class LyricFinder:
     def __init__(self, genius_key:str, save_path:str):
         self.genius = Genius(genius_key)
 
+        #lyrics genius settings
         self.genius.verbose = True
         self.genius.remove_section_headers = True
         self.genius.skip_non_songs = True
