@@ -6,6 +6,8 @@ import argparse
 import random
 import nltk
 
+genius_token = 'Pi4k_2PC5BmgU-WQorbpVE-3AWtCNGiD0szQMkfBb8pqEAEPRiR6-_lWmahaxxIn'
+
 class LyricGenerator:
     def __init__(self, artist_name:str):
         #initialize nltk variables
@@ -168,8 +170,6 @@ class LyricGenerator:
         return result
 
 def test():
-    #genius token - replace this
-    genius_token = 'Pi4k_2PC5BmgU-WQorbpVE-3AWtCNGiD0szQMkfBb8pqEAEPRiR6-_lWmahaxxIn'
     lf = LyricFinder(genius_token, 'lyrics')
 
     artists = ['The Beatles', 'King Gizzard', 'Justin Bieber', 'Animal Collective', 'Eminem', 'Led Zeppelin', 'Luke Combs', 'Pitbull', 'Kendrick Lamar', 'Maluma']
@@ -204,9 +204,6 @@ def test():
 
 
 def main():
-    #genius token - replace this
-    genius_token = 'Pi4k_2PC5BmgU-WQorbpVE-3AWtCNGiD0szQMkfBb8pqEAEPRiR6-_lWmahaxxIn'
-    
     parser = argparse.ArgumentParser(description='Generate orginal lyrics based on an artist.')
     parser.add_argument('--artist', type=str, default='The Beatles',
                         help='Artist to generate similar lyrics to')
@@ -230,5 +227,5 @@ def main():
 if __name__ == "__main__":
     print("Running main")
     main()
-    print("\nRunning test")
-    test()
+    #print("\nRunning test")
+    #test()

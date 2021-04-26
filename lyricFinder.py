@@ -69,8 +69,6 @@ class LyricFinder:
             
 
 def main():
-
-    #go here['https://genius.com/api-clients'] to get ur token
     genius_token = 'Pi4k_2PC5BmgU-WQorbpVE-3AWtCNGiD0szQMkfBb8pqEAEPRiR6-_lWmahaxxIn'
     lf = LyricFinder(genius_token, 'lyrics')
 
