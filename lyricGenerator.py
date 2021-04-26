@@ -167,7 +167,7 @@ class LyricGenerator:
         return syll_counts
         #get a random value from that list later when generating lyrics
 
-def main():
+def test():
     #genius token - replace this
     genius_token = 'Pi4k_2PC5BmgU-WQorbpVE-3AWtCNGiD0szQMkfBb8pqEAEPRiR6-_lWmahaxxIn'
     lf = LyricFinder(genius_token, 'lyrics')
@@ -197,6 +197,26 @@ def main():
         lines.append("\n")
     with open("tests-results.txt", "w", encoding="utf-8") as f:
         f.writelines(lines)
-        
+
+
+def main():
+    #genius token - replace this
+    genius_token = 'Pi4k_2PC5BmgU-WQorbpVE-3AWtCNGiD0szQMkfBb8pqEAEPRiR6-_lWmahaxxIn'
+    artist = 'The Beatles'
+    song_count = 10
+    
+    lf = LyricFinder(genius_token, 'lyrics')
+    gen = LyricGenerator(artist)
+    
+    data = lf.get_artist_lyrics(artist, song_count)
+    gen.train(data)
+
+    lyrics = gen.generate()
+    gleu_score = gen.analyze_lyrics(data, lyrics)
+
+    print(lyrics)
+    print("GLEU: " + str(gleu_score))
+
 if __name__ == "__main__":
     main()
+    #test()
