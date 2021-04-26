@@ -2,6 +2,7 @@ from lyricFinder import LyricFinder
 from nltk.tokenize import RegexpTokenizer
 import nltk.translate.gleu_score as gleu
 import numpy as np
+import argparse
 import random
 import nltk
 
@@ -47,7 +48,44 @@ class LyricGenerator:
             lines.append("")
         result = '\n'.join(lines)
         return result
-        
+    
+    def generate_model(self, cfdist, word) :
+        result = []
+        tempWord = ""
+        #randomize length of the line from all syllable patterns in the source
+        num = random.choice(self.syll_counts)
+        count = 0
+        while count <= num :
+            #detect if a token is a contraction or comma and add it to the end of the previous word
+            if word[0] in [',',"'"]:
+                tempWord = word
+            else:
+                result.append(word + tempWord)
+                tempWord = ""
+                #adjust the count to the current length of the sentence in syllables
+                count += sum(self.get_range_syllables_line(word)[:1])
+
+            possible = cfdist[word].keys()
+            possible = list( possible )
+            if len(possible) == 0 :
+                return result
+            # Find a random word from the most probable words
+            topOfRange = int(len(possible)*.5)
+            word = possible[random.randint(0,topOfRange)]
+        result[-1] = result[-1] + tempWord
+        return result
+
+    def get_rhyme_line(self, rhyme):
+        #get a list of all words in the dict that rhyme with the word
+        listRhyming = self.word_rhymes_reverse[self.word_rhymes[rhyme]]
+        if len(listRhyming) == 0 :
+            return 0
+        #choose a random rhyme and create sentence from that
+        rhymeWord = random.choice(listRhyming)
+        newLine = self.generate_model(self.invertedCfd, rhymeWord)
+        newLine.reverse()
+        return ' '.join(newLine)
+
     def get_rhymes(self, text:list):
         vocab = set(text)
         bgrams = list(nltk.bigrams(text))
@@ -77,52 +115,6 @@ class LyricGenerator:
         self.word_rhymes = forwardDict
         self.word_rhymes_reverse = reverseDict
 
-    def get_rhyme_line(self, rhyme):
-        #get a list of all words in the dict that rhyme with the word
-        listRhyming = self.word_rhymes_reverse[self.word_rhymes[rhyme]]
-        if len(listRhyming) == 0 :
-            return 0
-        #choose a random rhyme and create sentence from that
-        rhymeWord = random.choice(listRhyming)
-        newLine = self.generate_model(self.invertedCfd, rhymeWord)
-        newLine.reverse()
-        return ' '.join(newLine)
-                
-    def generate_model(self, cfdist, word) :
-        result = []
-        tempWord = ""
-        #randomize length of the line from all syllable patterns in the source
-        num = random.choice(self.syll_counts)
-        count = 0
-        while count <= num :
-            #detect if a token is a contraction or comma and add it to the end of the previous word
-            if word[0] in [',',"'"]:
-                tempWord = word
-            else:
-                result.append(word + tempWord)
-                tempWord = ""
-                #adjust the count to the current length of the sentence in syllables
-                count += sum(self.get_range_syllables_line(word)[:1])
-
-            possible = cfdist[word].keys()
-            possible = list( possible )
-            if len(possible) == 0 :
-                return result
-            # Find a random word from the most probable words
-            topOfRange = int(len(possible)*.5)
-            word = possible[random.randint(0,topOfRange)]
-        result[-1] = result[-1] + tempWord
-        return result
-
-    def analyze_lyrics(self, ref_lyric_data, hyp_lyrics):
-        #create list of reference lyrics for gleu
-        ref_list = [self.tokenizer.tokenize(x['lyrics']) for x in ref_lyric_data]
-        #create a hypothesis lyric
-        hyp = self.tokenizer.tokenize(hyp_lyrics)
-        #calculate GLEU for the hypothesis lyrics
-        result = gleu.sentence_gleu(ref_list,hyp)
-        return result
-
     def get_range_syllables_line(self, raw_text:list):
         #keeps track of all of the syllable counts
         syll_counts = []
@@ -132,7 +124,6 @@ class LyricGenerator:
         '@', '[', "\\", "]", "^", "_", "`", "{", "|", "}", "~" ]
         vowels = 'aeiouAEIOU'
         
-
         #splits raw text into lines
         for line in raw_text.split('\n'):
             #splits line into tokens
@@ -166,6 +157,15 @@ class LyricGenerator:
 
         return syll_counts
         #get a random value from that list later when generating lyrics
+    
+    def analyze_lyrics(self, ref_lyric_data, hyp_lyrics):
+        #create list of reference lyrics for gleu
+        ref_list = [self.tokenizer.tokenize(x['lyrics']) for x in ref_lyric_data]
+        #create a hypothesis lyric
+        hyp = self.tokenizer.tokenize(hyp_lyrics)
+        #calculate GLEU for the hypothesis lyrics
+        result = gleu.sentence_gleu(ref_list,hyp)
+        return result
 
 def test():
     #genius token - replace this
@@ -202,13 +202,19 @@ def test():
 def main():
     #genius token - replace this
     genius_token = 'Pi4k_2PC5BmgU-WQorbpVE-3AWtCNGiD0szQMkfBb8pqEAEPRiR6-_lWmahaxxIn'
-    artist = 'The Beatles'
-    song_count = 10
+    
+    parser = argparse.ArgumentParser(description='Generate orginal lyrics based on an artist.')
+    parser.add_argument('--artist', type=str, default='The Beatles',
+                        help='Artist to generate similar lyrics to')
+    parser.add_argument('--song_count', type=int, default=10,
+                        help='Number of songs to use to create the model (sorted by popularity).')
+    args = parser.parse_args()
+    print("Generating original lyrics for %s based on their top %d songs." % (args.artist, args.song_count))
     
     lf = LyricFinder(genius_token, 'lyrics')
-    gen = LyricGenerator(artist)
+    gen = LyricGenerator(args.artist)
     
-    data = lf.get_artist_lyrics(artist, song_count)
+    data = lf.get_artist_lyrics(args.artist, args.song_count)
     gen.train(data)
 
     lyrics = gen.generate()
