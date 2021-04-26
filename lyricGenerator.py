@@ -17,10 +17,11 @@ class LyricGenerator:
         
         a = np.array(stanza_line_counts)
         self.avg_stanza_len = [round(np.percentile(a,40)), round(np.percentile(a,60))]
-        self.avg_stanza_count = round( len(stanza_line_counts) / len(lyrics) )
+        self.avg_stanza_count = max( round( len(stanza_line_counts) / len(lyrics) ), 1)
 
         lyric_tokens = self.tokenizer.tokenize(lyrics_str)
         self.get_rhymes(lyric_tokens)
+        print(self.rhymes,lyric_tokens)
         self.get_range_syllables_line(lyrics_str)
 
     def generate(self)->str:
@@ -28,8 +29,8 @@ class LyricGenerator:
         for _ in range(self.avg_stanza_count):
             stanza = []
             temp_rhymes = list(self.rhymes)
-            stanza_len = random.randint(self.avg_stanza_len[0],self.avg_stanza_len[1])
-            for _ in range(stanza_len // 2):
+            stanza_len = max(random.randint(self.avg_stanza_len[0],self.avg_stanza_len[1]), 1)
+            for _ in range(max(stanza_len // 2,1)):
                 rhyme = random.choice(temp_rhymes)
                 temp_rhymes.remove(rhyme)
                 stanza.append(self.get_rhyme_line(rhyme))
@@ -59,9 +60,9 @@ class LyricGenerator:
             else :
                 reverseDict[temp] = [each]
         
-        # Remove all rhyming sets with 3 or fewer words.
+        # Remove all rhyming sets with 2 or fewer words.
         for each in reverseDict.values() :
-            if len(each) < 4:
+            if len(each) < 3:
                 for every in each :
                     inter.remove(every)
         self.rhymes = inter
@@ -124,11 +125,9 @@ class LyricGenerator:
         #splits raw text into lines
         for line in raw_text.split('\n'):
             #splits line into tokens
-            #print(line)
             count = 0
             tokens = self.tokenizer.tokenize(line)
             for each in tokens:
-                #print(each)
                 each = each.lower()
                 #makes sure each token is not punctuation, try to look up token in cmu dictionary
                 if each not in punctuation:
@@ -162,8 +161,8 @@ def main():
     genius_token = 'Pi4k_2PC5BmgU-WQorbpVE-3AWtCNGiD0szQMkfBb8pqEAEPRiR6-_lWmahaxxIn'
     lf = LyricFinder(genius_token, 'lyrics')
 
-    artist = 'The Beatles'
-    data = lf.get_artist_lyrics(artist, num_songs=100)
+    artist = 'The Housing Crisis'
+    data = lf.get_artist_lyrics(artist, num_songs=10)
 
     gen = LyricGenerator(artist)
     gen.train(data)
