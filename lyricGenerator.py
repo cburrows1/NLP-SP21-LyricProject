@@ -192,8 +192,12 @@ def test():
             gleu_score = score_total / trials
             lyrics_print = lyrics.replace("\n","\\n")
             #prints results and writes them to a file
-            lines.append( "Artist: %s, Number of songs: %d, Score: %f - Lyrics: %s\n" % (artist, count, gleu_score, lyrics_print) )
-            print("Artist: %s, Number of songs: %d, Score: %f" % (artist, count, gleu_score))
+            lines.append( "Artist: %s Number of songs: %d, Score: %f - Lyrics: %s\n" % (artist, count, gleu_score, lyrics_print) )
+
+            max_len = max(len(x) for x in artists)
+            padded_name = artist + ' ' * (max_len - len(artist))
+            print("Artist: %s\tNumber of songs: %d\tScore: %f" % (padded_name, count, gleu_score))
+
         lines.append("\n")
     with open("tests-results.txt", "w", encoding="utf-8") as f:
         f.writelines(lines)
@@ -224,5 +228,7 @@ def main():
     print("GLEU: " + str(gleu_score))
 
 if __name__ == "__main__":
+    print("Running main")
     main()
-    #test()
+    print("\nRunning test")
+    test()
