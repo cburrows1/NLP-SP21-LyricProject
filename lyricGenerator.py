@@ -168,26 +168,34 @@ class LyricGenerator:
         #get a random value from that list later when generating lyrics
 
 def main():
+    #genius token - replace this
     genius_token = 'Pi4k_2PC5BmgU-WQorbpVE-3AWtCNGiD0szQMkfBb8pqEAEPRiR6-_lWmahaxxIn'
     lf = LyricFinder(genius_token, 'lyrics')
 
     artists = ['The Beatles', 'King Gizzard', 'Justin Bieber', 'Animal Collective', 'Eminem', 'Led Zeppelin', 'Luke Combs', 'Pitbull', 'Kendrick Lamar', 'Maluma']
-    song_counts = [5,20,50]
+    song_counts = [5, 20, 50]
+    trials = 10
 
     lines = []
     for count in song_counts:
         artists = lf.get_artists_lyrics(artists,count)
         for artist in artists:
+            #get each artists dictionary of lryics
             data = artists[artist]
             gen = LyricGenerator(artist)
             gen.train(data)
-            lyrics = gen.generate()
+            score_total = 0
+            #calculate average gleu score across n trials
+            for _ in range(trials):
+                lyrics = gen.generate()
+                score_total += gen.analyze_lyrics(data,lyrics)
+            gleu_score = score_total / trials
             lyrics_print = lyrics.replace("\n","\\n")
-            gleu_score = gen.analyze_lyrics(data,lyrics)
-            line = "Artist: %s, Number of songs: %d, Score: %f - Lyrics: %s" % (artist, count, gleu_score, lyrics_print)
-            lines.append(line)
-            print(line + '\n')
-    with open("tests-results.txt",'w') as f:
+            #prints results and writes them to a file
+            lines.append( "Artist: %s, Number of songs: %d, Score: %f - Lyrics: %s\n" % (artist, count, gleu_score, lyrics_print) )
+            print("Artist: %s, Number of songs: %d, Score: %f" % (artist, count, gleu_score))
+        lines.append("\n")
+    with open("tests-results.txt", "w", encoding="utf-8") as f:
         f.writelines(lines)
         
 if __name__ == "__main__":
