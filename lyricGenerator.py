@@ -21,6 +21,7 @@ class LyricGenerator:
 
         lyric_tokens = self.tokenizer.tokenize(lyrics_str)
         self.get_rhymes(lyric_tokens)
+        self.get_range_syllables_line(lyrics_str)
 
     def generate(self)->str:
         lines = []
@@ -82,11 +83,19 @@ class LyricGenerator:
     def generate_model(self, cfdist, word, num) :
         result = []
         tempWord = ""
-        for i in range(num) :
+        vowels = set('aeiouAEIOU')
+
+        num = random.choice(self.syll_counts)
+        count = 0
+        while count <= num :
             if word[0] in [',',"'"]:
                 tempWord = word
             else:
                 result.append(word + tempWord)
+                tempWord = ""
+                for letter in word:
+                    if letter in vowels:
+                        count = count + 1
             possible = cfdist[word].keys()
             possible = list( possible )
             if len(possible) == 0 :
@@ -96,11 +105,58 @@ class LyricGenerator:
             word = possible[random.randint(0,topOfRange)]
         result[-1] = result[-1] + tempWord
         return result
+
     def analyze_lyrics(self, ref_lyric_data, hyp_lyrics):
         ref_list = [self.tokenizer.tokenize(x['lyrics']) for x in ref_lyric_data]
         hyp = self.tokenizer.tokenize(hyp_lyrics)
         result = gleu.sentence_gleu(ref_list,hyp)
         return result
+
+    def get_range_syllables_line(self, raw_text:list):
+        #keeps track of all of the syllable counts
+        syll_counts = []
+
+        d = nltk.corpus.cmudict.dict()
+        punctuation = ['!','#','$','%','&','(',')','*','+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', "\\", "]", "^", "_", "`", "{", "|", "}", "~"]
+        vowels = 'aeiouAEIOU'
+        ps = nltk.stem.PorterStemmer()
+
+        #splits raw text into lines
+        for line in raw_text.split('\n'):
+            #splits line into tokens
+            #print(line)
+            count = 0
+            tokens = self.tokenizer.tokenize(line)
+            for each in tokens:
+                #print(each)
+                each = each.lower()
+                #makes sure each token is not punctuation, try to look up token in cmu dictionary
+                if each not in punctuation:
+                    try:
+                        l = d[each]
+                        first = l[0]
+                        for each in first:
+                            if each[0] in vowels:
+                                # if has a vowel in cmu, it counts as a syllable
+                                count = count + 1
+                    except Exception:
+                        #if token is not in cmu, try to lookup its stem
+                        s = ps.stem(each)
+                        try:
+                            x = d[s]
+                            f = x[0]
+                            for each_ in f:
+                                if each_[0] in vowels:
+                                    count = count + 1
+                        except Exception:
+                            #if stem isn't in the dictionary either, count the token as 1 syllable
+                            count = count + 1
+            #print(count)
+            if (count != 0):
+                syll_counts.append(count)
+
+        self.syll_counts = syll_counts
+        #get a random value from that list later when generating lyrics
 
 def main():
     genius_token = 'Pi4k_2PC5BmgU-WQorbpVE-3AWtCNGiD0szQMkfBb8pqEAEPRiR6-_lWmahaxxIn'
