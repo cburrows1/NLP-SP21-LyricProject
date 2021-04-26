@@ -1,4 +1,5 @@
 # NLP-SP21-LyricProject
+**Cameron Burrows, Kara Evans**
 ## Description
 * Natural Language Processing project that can find any artists songs and lyrics from https://genius.com
 * Stores retrieved lyrics for faster subsequent processing

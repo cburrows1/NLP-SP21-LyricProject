@@ -25,7 +25,12 @@ class LyricFinder:
             return lyrics
 
         #search the artists page using genius until the requested amount of songs are found
-        artist = self.genius.search_artist(artist_name,max_songs=1)
+        while True:
+                try:
+                    artist = self.genius.search_artist(artist_name, max_songs=1)
+                    break
+                except:
+                    pass
         page = 1
         songs = []
         while page and len(songs) < num_songs:
@@ -41,7 +46,12 @@ class LyricFinder:
         #go through each song and request the lyrics
         lyrics = []
         for song in songs:
-            genius_song = self.genius.search_song(song['title'], artist.name)
+            while True:
+                try:
+                    genius_song = self.genius.search_song(song['title'], artist.name)
+                    break
+                except:
+                    pass
             if genius_song is None:
                 continue
             lyrics.append({'title':song['title'], 'lyrics':genius_song.lyrics})
