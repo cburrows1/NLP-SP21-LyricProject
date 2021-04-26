@@ -33,9 +33,16 @@ class LyricFinder:
             songs.extend(request['songs'])
             page = request['next_page']
         songs = songs[:num_songs]
-
-        lyrics = [{'title':song['title'], 'lyrics':self.genius.search_song(song['title'], artist.name).lyrics} for song in songs]
+        
+        lyrics = []
+        for song in songs:
+            genius_song = self.genius.search_song(song['title'], artist.name)
+            if genius_song is None:
+                continue
+            lyrics.append({'title':song['title'], 'lyrics':genius_song.lyrics})
         self.all_lyrics[artist_name] = lyrics
+
+        artist_path = os.path.join(self.path,"{0}_{1}.json".format(artist_name.lower().replace(' ','_'), len(lyrics)))
         with open(artist_path,'w') as f:
             json.dump(lyrics, f, sort_keys=True, indent=4, separators=(',', ': '))
         return lyrics

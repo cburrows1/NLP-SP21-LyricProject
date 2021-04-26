@@ -21,7 +21,6 @@ class LyricGenerator:
 
         lyric_tokens = self.tokenizer.tokenize(lyrics_str)
         self.get_rhymes(lyric_tokens)
-        print(self.rhymes,lyric_tokens)
         self.get_range_syllables_line(lyrics_str)
 
     def generate(self)->str:
@@ -150,7 +149,6 @@ class LyricGenerator:
                         except Exception:
                             #if stem isn't in the dictionary either, count the token as 1 syllable
                             count = count + 1
-            #print(count)
             if (count != 0):
                 syll_counts.append(count)
 
@@ -161,8 +159,8 @@ def main():
     genius_token = 'Pi4k_2PC5BmgU-WQorbpVE-3AWtCNGiD0szQMkfBb8pqEAEPRiR6-_lWmahaxxIn'
     lf = LyricFinder(genius_token, 'lyrics')
 
-    artist = 'The Housing Crisis'
-    data = lf.get_artist_lyrics(artist, num_songs=10)
+    artist = 'Led Zeppelin'
+    data = lf.get_artist_lyrics(artist, num_songs=50)
 
     gen = LyricGenerator(artist)
     gen.train(data)
